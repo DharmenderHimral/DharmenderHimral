@@ -3,157 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders Game</title>
+    <title>3D Space Shooter</title>
     <style>
-        body {
-            margin: 0;
-            background-color: black;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        canvas {
-            background-color: #000;
-            border: 2px solid white;
-        }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
-        let player = {
-            x: canvas.width / 2 - 25,
-            y: canvas.height - 60,
-            width: 50,
-            height: 50,
-            speed: 5,
-            dx: 0,
-            draw: function() {
-                ctx.fillStyle = 'lime';
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            }
-        };
-
-        let bullets = [];
-        let enemies = [];
+        let scene, camera, renderer;
+        let spaceship, bullets = [], enemies = [];
+        let spaceshipSpeed = 0.2, bulletSpeed = 0.5, enemySpeed = 0.1;
         let score = 0;
 
-        // Bullet class
-        class Bullet {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.width = 5;
-                this.height = 20;
-                this.speed = 3;
-            }
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-            draw() {
-                ctx.fillStyle = 'red';
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            }
+            // Create spaceship
+            let geometry = new THREE.BoxGeometry(1, 1, 3);
+            let material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            spaceship = new THREE.Mesh(geometry, material);
+            spaceship.position.z = -5;
+            scene.add(spaceship);
 
-            move() {
-                this.y -= this.speed;
+            // Create enemy
+            function createEnemy() {
+                let enemy = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 3), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                enemy.position.x = Math.random() * 10 - 5;
+                enemy.position.y = Math.random() * 10 - 5;
+                enemy.position.z = -Math.random() * 20 - 5;
+                enemies.push(enemy);
+                scene.add(enemy);
             }
+            createEnemy();
+
+            // Camera position
+            camera.position.z = 5;
+
+            // Event listeners
+            window.addEventListener('keydown', (event) => {
+                if (event.key === 'ArrowUp') spaceship.position.y += spaceshipSpeed;
+                if (event.key === 'ArrowDown') spaceship.position.y -= spaceshipSpeed;
+                if (event.key === 'ArrowLeft') spaceship.position.x -= spaceshipSpeed;
+                if (event.key === 'ArrowRight') spaceship.position.x += spaceshipSpeed;
+                if (event.key === ' ') fireBullet();
+            });
+
+            // Start animation loop
+            animate();
         }
 
-        // Enemy class
-        class Enemy {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.width = 50;
-                this.height = 50;
-                this.speed = 1;
-            }
-
-            draw() {
-                ctx.fillStyle = 'yellow';
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            }
-
-            move() {
-                this.y += this.speed;
-            }
-        }
-
-        // Create multiple enemies
-        function createEnemies() {
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 6; j++) {
-                    enemies.push(new Enemy(80 * j + 50, 60 * i + 30));
-                }
-            }
-        }
-
-        // Draw everything
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            player.draw();
-            bullets.forEach(bullet => bullet.draw());
-            enemies.forEach(enemy => enemy.draw());
-
-            // Draw score
-            ctx.fillStyle = 'white';
-            ctx.font = '20px Arial';
-            ctx.fillText('Score: ' + score, 10, 30);
-
-            move();
-            collisionDetection();
-        }
-
-        // Update player and bullet movement
-        function move() {
-            player.x += player.dx;
-
-            // Keep player within canvas boundaries
-            if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-
-            bullets.forEach(bullet => bullet.move());
-            enemies.forEach(enemy => enemy.move());
-        }
-
-        // Fire bullets
         function fireBullet() {
-            bullets.push(new Bullet(player.x + player.width / 2 - 2, player.y));
+            let geometry = new THREE.CylinderGeometry(0.05, 0.05, 1);
+            let material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            let bullet = new THREE.Mesh(geometry, material);
+            bullet.position.set(spaceship.position.x, spaceship.position.y, spaceship.position.z);
+            bullets.push(bullet);
+            scene.add(bullet);
         }
 
-        // Detect collisions between bullets and enemies
-        function collisionDetection() {
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Move bullets
             for (let i = 0; i < bullets.length; i++) {
-                for (let j = 0; j < enemies.length; j++) {
-                    if (bullets[i] && enemies[j]) {
-                        if (bullets[i].x < enemies[j].x + enemies[j].width &&
-                            bullets[i].x + bullets[i].width > enemies[j].x &&
-                            bullets[i].y < enemies[j].y + enemies[j].height &&
-                            bullets[i].y + bullets[i].height > enemies[j].y) {
-                            
-                            // Collision detected, remove bullet and enemy
-                            bullets.splice(i, 1);
-                            enemies.splice(j, 1);
-                            score += 10;
-                        }
-                    }
-                }
+                bullets[i].position.z -= bulletSpeed;
+                if (bullets[i].position.z < -10) scene.remove(bullets[i]);
             }
-        }
 
-        // Keyboard events
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowLeft') {
-                player.dx = -player.speed;
-            } else if (event.key === 'ArrowRight') {
-                player.dx = player.speed;
-            } else if (event.key === ' ') {
-                fireBullet();
+            // Move enemies
+            for (let i = 0; i < enemies.length; i++) {
+                enemies[i].position.z += enemySpeed;
+                if (enemies[i].position.z > 10) enemies[i].position.z = -10;
             }
-        });
 
-        document.addEventListener('keyup', (event
+           
