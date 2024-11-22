@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Space Shooter</title>
+    <title>3D Space Shooter Game</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -83,4 +83,34 @@
                 if (enemies[i].position.z > 10) enemies[i].position.z = -10;
             }
 
-           
+            // Check for collisions
+            checkCollisions();
+
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        function checkCollisions() {
+            for (let i = 0; i < bullets.length; i++) {
+                for (let j = 0; j < enemies.length; j++) {
+                    if (bullets[i].position.distanceTo(enemies[j].position) < 1) {
+                        // Bullet hits enemy
+                        scene.remove(bullets[i]);
+                        scene.remove(enemies[j]);
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        createEnemy(); // Spawn a new enemy
+                        score += 10; // Increment score
+                        console.log("Score: " + score);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Initialize the game
+        init();
+    </script>
+</body>
+</html>
+
