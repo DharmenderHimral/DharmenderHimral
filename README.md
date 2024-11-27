@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Space Shooter Game</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0;  hidden; }
         canvas { display: block; }
     </style>
 </head>
